@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build assignment3 shell",
+      "type": "shell",
+      "command": "gcc",
+      "args": [
+        "-g",
+        "${workspaceFolder}/guzmanjo_assignment3.c",
+        "-o",
+        "${workspaceFolder}/guzmanjo_assignment3"
+      ],
+      "group": "build",
+      "problemMatcher": ["$gcc"],
+      "detail": "Build the shell program from guzmanjo_assignment3.c"
+    }
+  ]
+}
