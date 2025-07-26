@@ -77,13 +77,35 @@ int main()
 	{
 		curr_command = parse_input();
 
-		for(int i = 0; i <curr_command->argc; i++){
-			// Exit command
-			// https://stackoverflow.com/questions/14558068/c-kill-all-processes
-			if(curr_command->argv[i] == "exit"){
-				kill(0, SIGKILL);
+		if(!strcmp(curr_command->argv[0], "exit")){
+			exit(EXIT_SUCCESS);
+		}
+		else if(!strcmp(curr_command->argv[0], "cd")){
+			if(curr_command->argc == 1){
+				char* homeDir = getenv("HOME");
+				printf("Home dir = %s\n", homeDir);
+				chdir(homeDir);
+			}
+			else{
+				printf("Directory to change to = %s\n", curr_command->argv[1]);
+				chdir(curr_command->argv[1]);
 			}
 		}
+		else if(!strcmp(curr_command->argv[0], "status")){
+			printf("exit value 0");
+			fflush(stdout);
+			// will need to add in something that tracks foreground commands
+		}
+
+
+		// for(int i = 0; i <curr_command->argc; i++){
+		// 	// Exit command
+		// 	// https://stackoverflow.com/questions/14558068/c-kill-all-processes
+		// 	if(!strcmp(curr_command->argv[i],"exit")){
+		// 		kill(0, SIGKILL);
+		// 		//exit(0);
+		// 	}
+		// }
 
 	}
 	return EXIT_SUCCESS;
