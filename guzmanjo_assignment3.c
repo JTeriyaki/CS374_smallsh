@@ -8,6 +8,11 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
 
 #define INPUT_LENGTH 2048
 #define MAX_ARGS 512
@@ -32,20 +37,34 @@ struct command_line *parse_input()
 	printf(": ");
 	fflush(stdout);
 	fgets(input, INPUT_LENGTH, stdin);
+    //int test = strlen(input);
 
+    
+	// Do I need to free any memory here?
 	// Tokenize the input
-	char *token = strtok(input, " \n");
+	char* savePtr;
+	char* checkPtr;
+	char *token = strtok_r(input, " \n", &savePtr);
 	while(token){
 		if(!strcmp(token,"<")){
-			curr_command->input_file = strdup(strtok(NULL," \n"));
+			curr_command->input_file = strdup(strtok_r(NULL," \n", &savePtr));
 		} else if(!strcmp(token,">")){
-			curr_command->output_file = strdup(strtok(NULL," \n"));
+			curr_command->output_file = strdup(strtok_r(NULL," \n", &savePtr));
 		} else if(!strcmp(token,"&")){
-			curr_command->is_bg = true;
-		} else{
+			checkPtr = savePtr;
+            char *checkToken = strtok_r(NULL, " \n", &checkPtr);
+            if(checkPtr == NULL){
+                curr_command->is_bg = true;
+            }
+			else{
+				curr_command->argv[curr_command->argc++] = strdup(token);
+			}
+		} else if(!strcmp(token,"#")){
+			break;
+		}else{
 			curr_command->argv[curr_command->argc++] = strdup(token);
 		}
-		token=strtok(NULL," \n");
+		token=strtok_r(NULL," \n", &savePtr);
 	}
 	return curr_command;
 }
@@ -57,6 +76,14 @@ int main()
 	while(true)
 	{
 		curr_command = parse_input();
+
+		for(int i = 0; i <curr_command->argc; i++){
+			// Exit command
+			// https://stackoverflow.com/questions/14558068/c-kill-all-processes
+			if(curr_command->argv[i] == "exit"){
+				kill(0, SIGKILL);
+			}
+		}
 
 	}
 	return EXIT_SUCCESS;

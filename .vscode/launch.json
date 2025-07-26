@@ -1,25 +1,120 @@
 {
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug Assignment3 Shell",
-      "type": "cppdbg",
-      "request": "launch",
-      "program": "${workspaceFolder}/guzmanjo_assignment3",
-      "args": [],
-      "stopAtEntry": false,
-      "cwd": "${workspaceFolder}",
-      "environment": [],
-      "externalConsole": false,
-      "MIMode": "gdb",
-      "setupCommands": [
+    "version": "0.2.0",
+    "configurations": [
         {
-          "description": "Enable pretty-printing for gdb",
-          "text": "-enable-pretty-printing",
-          "ignoreFailures": true
+            "name": "C/C++: gcc build and debug active file",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${fileDirname}/${fileBasenameNoExtension}",
+            // "args": ["movies.csv"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "C/C++: gcc build active file",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "logging": {
+                "trace": true,
+                "traceResponse": true,
+                "engineLogging": true
+            }
+        },
+        {
+            "name": "C/C++: gcc build and debug active file check for Memory Leaks",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${fileDirname}/${fileBasenameNoExtension}",
+            // "args": ["movies.csv"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "C/C++: gcc build active file",
+            "postDebugTask": "Check for memory leaks",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "logging": {
+                "trace": true,
+                "traceResponse": true,
+                "engineLogging": true
+            }
         }
-      ],
-      "preLaunchTask": "build assignment3 shell"
-    }
-  ]
+    ]
 }
+// {
+//     "version": "0.2.0",
+//     "configurations": [
+//         {
+//             "name": "Launch Program",
+//             "type": "cppdbg",
+//             "request": "launch",
+//             "program": "${workspaceFolder}/movies",
+//             "args": ["movies.csv"],
+//             "stopAtEntry": false,
+//             "cwd": "${workspaceFolder}",
+//             "environment": [],
+//             "externalConsole": false,
+//             "MIMode": "gdb",
+//             "preLaunchTask": "C/C++: gcc build active file",
+//             "miDebuggerPath": "/usr/bin/gdb",
+//             "setupCommands": [
+//                 {
+//                     "description": "Enable pretty-printing for gdb",
+//                     "text": "-enable-pretty-printing",
+//                     "ignoreFailures": true
+//                 }
+//             ],
+//             "logging": {
+//                 "moduleLoad": false,
+//                 "trace": false,
+//                 "engineLogging": false,
+//                 "programOutput": true,
+//                 "exceptions": false
+//             }
+//         }
+//     ]
+// }
+// // {
+// //     "version": "0.2.0",
+// //     "configurations": [
+// //         {
+// //             "name": "(gdb) Launch",
+// //             "type": "cppdbg",
+// //             "request": "launch",
+// //             "program": "${workspaceFolder}/movies",
+// //             "args": ["movies.csv"],
+// //             "stopAtEntry": false,
+// //             "cwd": "${workspaceFolder}",
+// //             "environment": [],
+// //             "externalConsole": false,
+// //             "MIMode": "gdb",
+// //             "setupCommands": [
+// //                 {
+// //                     "description": "Enable pretty-printing for gdb",
+// //                     "text": "-enable-pretty-printing",
+// //                     "ignoreFailures": true
+// //                 }
+// //             ],
+// //             "preLaunchTask": "build",
+// //             "miDebuggerPath": "/usr/bin/gdb",
+// //             "logging": {
+// //                 "engineLogging": true
+// //             }
+// //         }
+// //     ]
+// // }
