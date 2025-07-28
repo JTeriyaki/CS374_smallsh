@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 
 #define INPUT_LENGTH 2048
@@ -26,6 +27,83 @@ struct command_line
 	char *output_file;
 	bool is_bg;
 };
+
+struct command_line *parse_input();
+
+void processCommands(struct command_line* command, pid_t** bgPids, int* bgPidCount, int* status);
+
+int main()
+{
+	struct command_line *curr_command;
+	pid_t* bgPids = NULL;
+	int bgPidCount = 0;
+	int status = 0;
+
+	while(true)
+	{
+
+		//Iterate through bg processes
+		for(int i = 0; i < bgPidCount; i++){
+			int status;
+			if (bgPids[i] > 0){
+				pid_t bgPid = waitpid(bgPids[i], &status, WNOHANG);
+				if (bgPid > 0){
+					// Process was successful
+					printf("background pid %d is done: exit value %d\n", bgPid, WEXITSTATUS(status));
+					bgPids[i] = -1;
+				}
+			}
+		}
+
+		curr_command = parse_input();
+
+		if(curr_command->argv[0] == NULL){
+			continue;
+		}
+
+		if(!strcmp(curr_command->argv[0], "exit")){
+			exit(EXIT_SUCCESS);
+		}
+		else if(curr_command->argv[0][0] == '#'){
+			continue;
+		}
+		else if(!strcmp(curr_command->argv[0], "cd")){
+			if(curr_command->argc == 1){
+				char* homeDir = getenv("HOME");
+				//printf("Home dir = %s\n", homeDir);
+				chdir(homeDir);
+				//fflush(stdout);
+			}
+			else{
+				//printf("Directory to change to = %s\n", curr_command->argv[1]);
+				chdir(curr_command->argv[1]);
+				//fflush(stdout);
+			}
+		}
+		else if(!strcmp(curr_command->argv[0], "status")){
+			printf("exit value %d\n", status);
+			fflush(stdout);
+			// will need to add in something that tracks foreground commands
+		}
+		else{
+			//https://stackoverflow.com/questions/31714475/how-to-pass-an-integer-pointer-to-a-function
+			processCommands(curr_command, &bgPids, &bgPidCount, &status);
+		}
+
+
+
+		// for(int i = 0; i <curr_command->argc; i++){
+		// 	// Exit command
+		// 	// https://stackoverflow.com/questions/14558068/c-kill-all-processes
+		// 	if(!strcmp(curr_command->argv[i],"exit")){
+		// 		kill(0, SIGKILL);
+		// 		//exit(0);
+		// 	}
+		// }
+
+	}
+	return EXIT_SUCCESS;
+}
 
 
 struct command_line *parse_input()
@@ -53,14 +131,12 @@ struct command_line *parse_input()
 		} else if(!strcmp(token,"&")){
 			checkPtr = savePtr;
             char *checkToken = strtok_r(NULL, " \n", &checkPtr);
-            if(checkPtr == NULL){
+            if(checkToken == NULL){
                 curr_command->is_bg = true;
             }
 			else{
 				curr_command->argv[curr_command->argc++] = strdup(token);
 			}
-		} else if(!strcmp(token,"#")){
-			break;
 		}else{
 			curr_command->argv[curr_command->argc++] = strdup(token);
 		}
@@ -69,44 +145,113 @@ struct command_line *parse_input()
 	return curr_command;
 }
 
-int main()
-{
-	struct command_line *curr_command;
 
-	while(true)
-	{
-		curr_command = parse_input();
+// Somehow need to figure out how to return the exit status. Possibly return an int?
+void processCommands(struct command_line* command, pid_t** bgPids, int* bgPidCount, int* status){
+	int childStatus;
 
-		if(!strcmp(curr_command->argv[0], "exit")){
-			exit(EXIT_SUCCESS);
+	// Background process
+	if(command->is_bg){
+		pid_t spawnPid = fork();
+
+		switch(spawnPid){
+			case -1:
+				perror("fork()\n");
+				fflush(stdout);
+				exit(1);
+				break;
+			case 0:
+				execvp(command->argv[0], command->argv);
+				perror("excevp");
+				fflush(stdout);
+				exit(1);
+				break;
+			default:
+				printf("background pid is %d\n", spawnPid);
+				//printf("foreground Pid should be: %d\n", getpid());
+				fflush(stdout);
+				*bgPids = (pid_t *)realloc(*bgPids, (*bgPidCount + 1) * sizeof(pid_t));
+				(*bgPids)[*bgPidCount] = spawnPid;
+				(*bgPidCount)++;
+				break;
 		}
-		else if(!strcmp(curr_command->argv[0], "cd")){
-			if(curr_command->argc == 1){
-				char* homeDir = getenv("HOME");
-				printf("Home dir = %s\n", homeDir);
-				chdir(homeDir);
-			}
-			else{
-				printf("Directory to change to = %s\n", curr_command->argv[1]);
-				chdir(curr_command->argv[1]);
-			}
-		}
-		else if(!strcmp(curr_command->argv[0], "status")){
-			printf("exit value 0");
-			fflush(stdout);
-			// will need to add in something that tracks foreground commands
-		}
-
-
-		// for(int i = 0; i <curr_command->argc; i++){
-		// 	// Exit command
-		// 	// https://stackoverflow.com/questions/14558068/c-kill-all-processes
-		// 	if(!strcmp(curr_command->argv[i],"exit")){
-		// 		kill(0, SIGKILL);
-		// 		//exit(0);
-		// 	}
-		// }
-
 	}
-	return EXIT_SUCCESS;
+
+	// Foreground process
+	else{
+		pid_t spawnPid = fork();
+
+		switch(spawnPid){
+			case -1:
+				perror("fork()\n");
+				fflush(stdout);
+				(*status) = 1;
+				exit(1);
+				break;
+
+			case 0:
+				// I/O redirections
+
+				// If input file
+				if(command->input_file){
+					// printf("This works\n");
+					// fflush(stdout);
+
+					// Open input file
+					int inputFD = open(command->input_file, O_RDONLY);
+					if (inputFD == -1){
+						printf("cannot open %s for input\n", command->input_file);
+						fflush(stdout);
+						(*status) = 1;
+						exit(1);
+					}
+
+					// Redirect stdin to input file
+					int inResult = dup2(inputFD, 0);
+					if (inResult == -1){
+						perror("input dup2()");
+						fflush(stdout);
+						(*status) = 1;
+						exit(1);
+					}
+				}
+
+				// If output file
+				if (command->output_file){
+					// Open output file
+					int outputFD = open(command->output_file, O_WRONLY | O_CREAT | O_TRUNC, 0640);
+					if (outputFD == -1){
+						printf("cannot open %s for output\n", command->output_file);
+						fflush(stdout);
+						(*status) = 1;
+						exit(1);
+					}
+
+					// Redirect stdout to output file
+					int outResult = dup2(outputFD, 1);
+						if (outResult == -1){
+						perror("output dup2()");
+						fflush(stdout);
+						(*status) = 1;
+						exit(1);
+					}
+				}
+
+				// I/O redirection is complete now completing child processes
+				execvp(command->argv[0], command->argv);
+				perror("execvp");
+				fflush(stdout);
+				(*status) = 1;
+				exit(1);
+				break;
+
+			default:
+				spawnPid = waitpid(spawnPid, &childStatus, 0);
+				// printf("Parent (%d): child (%d) terminated. Now parent is exiting\n", getpid(), spawnPid);
+				// fflush(stdout);
+				// exit(0);
+				(*status) = WEXITSTATUS(childStatus);
+				break;
+		}
+	}
 }
