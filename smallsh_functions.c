@@ -197,6 +197,59 @@ void processBackgroundCommand(struct command_line* command, pid_t** bgPids, int*
 				exit(1);
 				break;
 			case 0:
+				int inputFD;
+				// I/O redirections
+				// If input file
+				if(command->input_file){
+					// Open input file
+					inputFD = open(command->input_file, O_RDONLY);
+					if (inputFD == -1){
+						printf("cannot open %s for input\n", command->input_file);
+						fflush(stdout);
+						exit(1);
+					}
+				}else{
+					inputFD = open("/dev/null", O_RDONLY);
+					if (inputFD == -1){
+						printf("open /dev/null\n");
+						fflush(stdout);
+						exit(1);
+					}
+				}
+				// Redirect stdin to input file
+				int inResult = dup2(inputFD, 0);
+				if (inResult == -1){
+					perror("input dup2()");
+					fflush(stdout);
+					exit(1);
+				}
+
+				// If output file
+				int outputFD;
+				if (command->output_file){
+					// Open output file
+					outputFD = open(command->output_file, O_WRONLY | O_CREAT | O_TRUNC, 0640);
+					if (outputFD == -1){
+						printf("cannot open %s for output\n", command->output_file);
+						fflush(stdout);
+						exit(1);
+					}else{
+						outputFD = open("/dev/null", O_RDONLY);
+						if (outputFD == -1){
+						printf("open /dev/null\n");
+						fflush(stdout);
+						exit(1);
+						}
+					}
+				}
+				// Redirect stdout to output file
+				int outResult = dup2(outputFD, 1);
+					if (outResult == -1){
+					perror("output dup2()");
+					fflush(stdout);
+					exit(1);
+					}
+					
 				// Ignoring SIGTSTP struct created by parent
 				signal(SIGTSTP, SIG_IGN);
 
